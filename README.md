@@ -9,7 +9,9 @@
 
 ## Disclaimer
 
-Slipfrom was born out of a desire to learn more about the python AST. It is not actively developed, nor is it considered stable.
+Slipfrom was born out of a desire to learn more about the python AST, and potentially use it for my own personal projects if it works out.
+
+It is not actively developed, nor should it be considered stable.
 
 ## Roadmap
 
