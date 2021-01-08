@@ -1,6 +1,16 @@
 # 🏗 slipform
 [pythonflow](https://github.com/spotify/pythonflow) decorator for generating dataflow graphs from raw python.
 
+## Why?
+
+- Syntax is natural, you can use a simple decorator to obtain the dataflow graph. No need to rewrite your code for pythonflow.
+
+- Slipfrom allows you to write and test code as you normally would, debugging it using the debugger of your choice during runtime. When you are happy with your code, finally, at runtime you can generate the dataflow graph.
+
+## Disclaimer
+
+Slipfrom was born out of a desire to learn more about the python AST. It is not actively developed, nor is it considered stable.
+
 ## Roadmap
 
 **Priority**
