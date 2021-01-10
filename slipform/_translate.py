@@ -188,8 +188,20 @@ class SlipformPlaceholders(ast.NodeTransformer):
     """
 
     def visit_FunctionDef(self, node):
-        # import astpretty
-        # astpretty.pprint(node)
+        assert not node.args.posonlyargs, f'FunctionDef.args.posonlyargs is not yet supported: {node.args.posonlyargs}'
+        assert not node.args.vararg,      f'FunctionDef.args.vararg is not yet supported: {node.args.vararg}'
+        assert not node.args.kwonlyargs,  f'FunctionDef.args.kwonlyargs is not yet supported: {node.args.kwonlyargs}'
+        assert not node.args.kw_defaults, f'FunctionDef.args.kw_defaults is not yet supported: {node.args.kw_defaults}'
+        assert not node.args.kwarg,       f'FunctionDef.args.kwarg is not yet supported: {node.args.kwarg}'
+        assert not node.args.defaults,    f'FunctionDef.args.defaults is not yet supported: {node.args.defaults}'
+        # convert arguments to placeholders
+        # at the start of the function
+        for arg in node.args.args[::-1]:
+            assert str.isidentifier(arg.arg)
+            placeholder = ast.parse(f"{arg.arg} = pf.placeholder('{arg.arg}')").body[0]
+            node.body.insert(0, placeholder)
+        # clear the arguments from the function definition
+        node.args.args.clear()
         return node
 
 
