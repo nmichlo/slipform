@@ -5,11 +5,11 @@
 
 - Syntax is natural, you can use a simple decorator to obtain the dataflow graph. No need to rewrite your code for pythonflow.
 
-- Slipfrom allows you to write and test code as you normally would, debugging it using the debugger of your choice during runtime. When you are happy with your code, finally, at runtime you can generate the dataflow graph.
+- Slipform allows you to write and test code as you normally would, debugging it using the debugger of your choice during runtime. When you are happy with your code, finally, at runtime you can generate the dataflow graph.
 
 ## Disclaimer
 
-Slipfrom was born out of a desire to learn more about the python AST, and potentially use it for my own personal projects if it works out.
+Slipform was born out of a desire to learn more about the python AST, and potentially use it for my own personal projects if it works out.
 
 It is not actively developed, nor should it be considered stable.
 
@@ -34,16 +34,16 @@ It is not actively developed, nor should it be considered stable.
 
 ## Examples based on [Using Pythonflow](https://pythonflow.readthedocs.io/en/latest/guide.html)
 
-1. Get started by importing slipfrom
+1. Get started by importing slipform
 
 ```python3
-from slipfrom import slipfrom
+from slipform import slipform
 ```
 
 2. The most basic example is as follows: 
 
 ```python3
-@slipfrom
+@slipform
 def add_graph():
   a = 4
   b = 38
