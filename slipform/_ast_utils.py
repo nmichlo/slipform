@@ -35,7 +35,10 @@ def ast_compile_func(ast_module, scope=None):
         scope = {}
     # Compile the new method in the old methods scope. If we don't change the
     # name, this actually overrides the old function with the new one
-    code = compile(ast_module, '<string>', 'exec')
+    try:
+        code = compile(ast_module, '<string>', 'exec')
+    except Exception as e:
+        raise RuntimeError(f'Could not compile transformed node: {ast_module}')
     exec(code, scope)
     # return the actual function
     out_func = ast_assert_single_func(ast_module)
@@ -54,10 +57,7 @@ def ast_rewrite_function(func, node_transformer: Optional[ast.NodeTransformer], 
         import astunparse
         print('='*100, astunparse.unparse(out_node), '='*100, sep='\n')
     # compile and return the function
-    try:
-        return ast_compile_func(out_node, scope)
-    except OSError as e:
-        raise RuntimeError(f'Could not compile transformed node: {out_node}')
+    return ast_compile_func(out_node, scope)
 
 
 def ast_dfs_walk(node):

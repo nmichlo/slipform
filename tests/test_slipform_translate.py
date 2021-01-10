@@ -35,8 +35,8 @@ def test_slipform():
     # check rewrite
     ast_rewrite_function(func, ast.NodeTransformer())
     # check non-decorated slipform
-    print(slipform(func)())
-    print(slipform()(func)())
+    print(slipform(func)([]))
+    print(slipform()(func)([]))
 
 
 def test_slipform_decorator():
@@ -50,11 +50,12 @@ def test_slipform_decorator():
         pass
     assert isinstance(func, pf.Graph)
 
+
 def test_slipform_assign():
-    @slipform()
+    @slipform(debug=True)
     def func():
         a = pf.constant(1)
         b, c = pf.constant(2), pf.constant(3)
-        d, e = pf.constant([4, 5])
+        d, e = [4, 5]
     a, b, c, d, e = func(['a', 'b', 'c', 'd', 'e'])
     assert (a, b, c, d, e) == (1, 2, 3, 4, 5)
