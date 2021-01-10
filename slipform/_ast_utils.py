@@ -1,22 +1,36 @@
 import ast
 import inspect
+from typing import Optional
 
 
-def _assert_single_func(ast_module: ast.Module) -> ast.FunctionDef:
+def ast_assert_single_func(ast_module: ast.Module) -> ast.FunctionDef:
     assert isinstance(ast_module, ast.Module)
     assert len(ast_module.body) == 1
     assert isinstance(ast_module.body[0], ast.FunctionDef)
     return ast_module.body[0]
 
 
-def _ast_parse_func(func) -> ast.Module:
-    source = inspect.getsource(func)
+def inspect_get_source(func, unindent=True, strip_decorators=True):
+    lines, _ = inspect.getsourcelines(func)
+    if unindent:
+        indents = min(len(line) - len(line.lstrip(' ')) for line in lines)
+        lines = [line[indents:] for line in lines]
+    if strip_decorators:
+        i = 0
+        while lines[i].lstrip().startswith('@'):
+            i += 1
+        lines = lines[i:]
+    return ''.join(lines)
+
+
+def ast_decompile_func(func, unindent=True, strip_decorators=True) -> ast.Module:
+    source = inspect_get_source(func, unindent=unindent, strip_decorators=strip_decorators)
     ast_module = ast.parse(source)
-    _assert_single_func(ast_module)
+    ast_assert_single_func(ast_module)
     return ast_module
 
 
-def _ast_compile_func(ast_module, scope=None):
+def ast_compile_func(ast_module, scope=None):
     if scope is None:
         scope = {}
     # Compile the new method in the old methods scope. If we don't change the
@@ -24,16 +38,35 @@ def _ast_compile_func(ast_module, scope=None):
     code = compile(ast_module, '<string>', 'exec')
     exec(code, scope)
     # return the actual function
-    out_func = _assert_single_func(ast_module)
+    out_func = ast_assert_single_func(ast_module)
     return scope[out_func.name]
 
 
-def rewrite_function(func, node_transformer: ast.NodeTransformer, scope=None):
+def ast_rewrite_function(func, node_transformer: Optional[ast.NodeTransformer], scope=None, debug=False, unindent=True, strip_decorators=True):
     if scope is None:
         scope = func.__globals__
     # generate AST for function
-    in_node = _ast_parse_func(func)
+    in_node = ast_decompile_func(func, unindent=unindent, strip_decorators=strip_decorators)
     # manipulate AST
     out_node = node_transformer.visit(in_node)
+    ast.fix_missing_locations(out_node)
+    if debug:
+        import astunparse
+        print('='*100, astunparse.unparse(out_node), '='*100, sep='\n')
     # compile and return the function
-    return _ast_compile_func(out_node, scope)
+    try:
+        return ast_compile_func(out_node, scope)
+    except OSError as e:
+        raise RuntimeError(f'Could not compile transformed node: {out_node}')
+
+
+def ast_dfs_walk(node):
+    from collections import deque
+    todo = deque([node])
+    while todo:
+        node = todo.pop()
+        children = list(ast.iter_child_nodes(node))[::-1]
+        todo.extend(children)
+        yield node
+
+
