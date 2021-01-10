@@ -16,12 +16,13 @@ It is not actively developed, nor should it be considered stable.
 ## Roadmap
 
 **Priority**
-- [ ] naming from assignments
-- [ ] placeholders from args
-- [ ] constant support
+- [x] naming from assignments
+- [x] placeholders from args
+- [x] constant support
 - [ ] functions to operations
 - [ ] import support
 - [ ] custom operation support
+- [ ] ignore comments `#[ignore]` or `#[slipform:ignore]`
 
 **Investigate**
 - [ ] module / import detection from function scope
@@ -38,31 +39,32 @@ It is not actively developed, nor should it be considered stable.
 
 ```python3
 from slipform import slipform
+# "pf" must be part of scope of any @slipfrom annotated
+# function. This limitation will be relaxed in future.
+import pythonflow as pf
 ```
 
-2. The most basic example is as follows: 
+2. A simple example is as follows: 
 
 ```python3
 @slipform
-def add_graph():
-  a = 4
-  b = 38
-  x = a + b
+def add_graph(x):
+  a = 5
+  b = 32
+  z = a + b + x
 ```
 
 With the equivalent pythonflow version:
 ```python3
 with pf.Graph() as add_graph:
-    a = pf.constant(4)
-    b = pf.constant(38)
-    x = a + b
+    x = pf.placeholder('x')
+    a = pf.constant(5, name='a')
+    b = pf.constant(32, name='b')
+    z = (a + b + x).set_name('z')
 ```
 
-We can evaluate the graph like usual using pythonflow:
-
-
+We can evaluate the graphs like usual using pythonflow:
 ```python3
-add_graph('x')
->>> 42
+add_graph(['b', 'z'], x=5)
+>>> (32, 42)
 ```
-
