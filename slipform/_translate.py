@@ -266,10 +266,16 @@ class SlipformCondition(ast.NodeTransformer):
         # modify alias to be compatible
         if alias.asname is None:
             alias.asname = alias.name
-        # OLD
-        alias.name = f'{node.module}.{alias.name}'
-        import_node = cls.ast_make_import_assign(alias)
-        return import_node
+        alias.name, name = node.module, alias.name
+        # place attribute after assign
+        # {asname} = pf.import_('{node.module}').{alias.name}
+        assign_node = cls.ast_make_import_assign(alias)
+        assign_node.value = ast.Attribute(
+            value=assign_node.value,
+            attr=name,
+            ctx=ast.Load(),
+        )
+        return assign_node
 
     def visit_Import(self, node):
         return [self.ast_make_import_assign(alias) for alias in node.names]

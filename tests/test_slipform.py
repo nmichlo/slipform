@@ -398,8 +398,7 @@ def test_import():
     assert graph('isfile')
     assert graph('a_is_ascii')
     assert graph('joined') == 'a/b'
-    with pytest.raises(ModuleNotFoundError):
-        assert graph('joined_fail') == 'a/b'
+    assert graph('joined_fail') == 'a/b'
 
 #
 # def test_dict():
