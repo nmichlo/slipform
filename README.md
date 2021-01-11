@@ -1,4 +1,4 @@
-# 🏗 slipform
+# 🏗 slipform &nbsp; ![](https://badge.fury.io/py/slipform.svg)
 [pythonflow](https://github.com/spotify/pythonflow) decorator for generating dataflow graphs from raw python.
 
 ## Why?
