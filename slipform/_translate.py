@@ -1,6 +1,4 @@
 import ast
-
-import astpretty
 from astmonkey.transformers import ParentChildNodeTransformer
 from slipform._ast_utils import ast_dfs_walk
 
@@ -282,6 +280,28 @@ class SlipformCondition(ast.NodeTransformer):
 
     def visit_ImportFrom(self, node):
         return [self.ast_make_import_from_assign(node, alias) for alias in node.names]
+
+if __name__ == '__main__':
+    from slipform import slipform
+    import pythonflow as pf
+
+
+
+
+    # @slipform(debug=True)
+    # def vae(b, x):
+    #     # pf.constant(1)
+    #     # a = pf.constant("")
+    #     a = 1
+    #
+    #     # b = 2
+    #     c = a + b + 1
+    #     d, ((g,), f) = 1, ((3,), 2)
+    #
+    #
+    # print(vae(['b', 'c', 'd', 'g', 'f'], b=10))
+    #
+    # astpretty.pprint(ast.parse('1 if condition else 2'))
 
 
 
