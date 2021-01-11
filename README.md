@@ -20,7 +20,7 @@ It is not actively developed, nor should it be considered stable.
 - [x] placeholders from args
 - [x] constant support
 - [ ] functions to operations
-- [ ] import support
+- [x] import support
 - [ ] custom operation support
 - [ ] ignore comments `#[ignore]` or `#[slipform:ignore]`
 
@@ -28,7 +28,7 @@ It is not actively developed, nor should it be considered stable.
 - [ ] module / import detection from function scope
 - [ ] sequences (map, list, tuple, zip, sum, filter)
 - [ ] for loop replacement?
-- [ ] conditionals replacement?
+- [x] conditional expression replacement?
 - [ ] assertion replacement?
 - [ ] try/catch replacement?
 - [ ] explicit dependencies?
@@ -67,4 +67,53 @@ We can evaluate the graphs like usual using pythonflow:
 ```python3
 add_graph(['b', 'z'], x=5)
 >>> (32, 42)
+```
+
+3. A more complicated example
+
+```python3
+@slipfrom()
+def vae(x, x_target, encoder, decoder, mse):
+    # import ... from ... (as ...) are all supported
+    import torch
+    import torch.nn.functional as F
+    # get the encoding!
+    z_params = encoder(x)
+    # deterministic, we dont reparameterize here
+    z = z_params.z_mean
+    # reconstruct here
+    x_pre_recon = decoder(z)
+    # final activation
+    x_recon = x_pre_recon if mse else torch.sigmoid(x_pre_recon)
+    # compute loss
+    loss = F.mse_loss(x_recon, x_target) if mse else F.binary_cross_entropy_with_logits(x_pre_recon, x_target)
+```
+
+The above will generate code equivalent in functionality to:
+
+```python3
+with pf.Graph() as add_graph:
+    x        = pf.placeholder('x')
+    x_target = pf.placeholder('x_target')
+    encoder  = pf.placeholder('encoder')
+    decoder  = pf.placeholder('decoder')
+    mse      = pf.placeholder('mse')
+    # import everything
+    torch = pf.import_('torch')
+    F = pf.import_('torch.nn.functional')
+    # get the encoding!
+    z_params = encoder(x)
+    z_params.set_name('z_params')
+    # deterministic, we dont reparameterize here
+    z = z_params.z_mean
+    z.set_name('z')
+    # reconstruct here
+    x_pre_recon = decoder(z)
+    x_pre_recon.set_name('x_pre_recon')
+    # final activation
+    x_recon = pf.conditional(mse, x_pre_recon, torch.sigmoid(x_pre_recon))
+    x_recon.set_name('x_recon')
+    # compute loss
+    loss = pf.conditional(mse, F.mse_loss(x_recon, x_target), F.binary_cross_entropy_with_logits(x_pre_recon, x_target))
+    loss.set_name('loss')
 ```
