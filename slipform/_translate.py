@@ -1,4 +1,6 @@
 import ast
+
+import astpretty
 from astmonkey.transformers import ParentChildNodeTransformer
 from slipform._ast_utils import ast_dfs_walk
 
@@ -250,6 +252,30 @@ class SlipformCondition(ast.NodeTransformer):
             ],
             keywords=[],
         )
+
+    @classmethod
+    def ast_make_import_assign(cls, alias):
+        name = alias.name
+        asname = alias.asname if (alias.asname is not None) else name.split('.')[0]
+        assert str.isidentifier(asname), 'This should never happen...'
+        import_node = ast.parse(f"{asname} = pf.import_('{name}')").body[0]
+        return import_node
+
+    @classmethod
+    def ast_make_import_from_assign(cls, node, alias):
+        # modify alias to be compatible
+        if alias.asname is None:
+            alias.asname = alias.name
+        # OLD
+        alias.name = f'{node.module}.{alias.name}'
+        import_node = cls.ast_make_import_assign(alias)
+        return import_node
+
+    def visit_Import(self, node):
+        return [self.ast_make_import_assign(alias) for alias in node.names]
+
+    def visit_ImportFrom(self, node):
+        return [self.ast_make_import_from_assign(node, alias) for alias in node.names]
 
 
 

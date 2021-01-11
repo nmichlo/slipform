@@ -29,6 +29,11 @@ def test_get_assign_target_names():
 def test_slipform():
     def func():
         pass
+
+        pass
+# invalid indent
+        pass
+
     # check compile & decompile
     node = ast_decompile_func(func)
     ast_compile_func(node)

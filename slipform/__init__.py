@@ -19,14 +19,14 @@ from slipform._translate import SlipformTransformer as _SlipformTransformer
 ORIG_FN_NAME = '_orig_fn'
 
 
-def slipform(*args, node_transformer=None, debug=False, **kwargs):
+def slipform(*args, node_transformer=None, add_scope=None, debug=False, **kwargs):
     assert 0 <= len(args) <= 1, 'no args are supported yet'
     assert not kwargs, 'no kwargs are supported yet'
 
     def _slipform_wrapper(func) -> _Graph:
         # transform the function into its pythonflow equivalent
         transformer = node_transformer if node_transformer is not None else _SlipformTransformer()
-        graph_generator = _ast_rewrite_function(func, node_transformer=transformer, debug=debug)
+        graph_generator = _ast_rewrite_function(func, node_transformer=transformer, add_scope=add_scope, debug=debug)
         # generate the dataflow graph using the transformed function
         with _Graph() as graph:
             graph_generator()

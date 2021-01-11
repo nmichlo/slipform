@@ -1,3 +1,4 @@
+import ast
 import os
 import pickle
 import random
@@ -41,6 +42,7 @@ def test_context():
     assert actual == 37
 
 
+# TODO: add this test
 # def test_iter():
 #     with pf.Graph() as graph:
 #         pf.constant('abc', name='alphabet', length=3)
@@ -59,56 +61,71 @@ def test_getattr():
     assert graph('imag') == 4
 
 
-# class MatmulDummy:
-#     """
-#     Dummy implementing matrix multiplication (https://www.python.org/dev/peps/pep-0465/) so we don't
-#     have to depend on numpy for the tests.
-#     """
-#     def __init__(self, value):
-#         self.value = value
-#
-#     def __matmul__(self, other):
-#         if isinstance(other, pf.Operation):
-#             return NotImplemented
-#         return self.value * other
-#
-#
-# @pytest.fixture(params=[
-#     ('+', 1, 2),
-#     ('-', 3, 7.0),
-#     ('*', 2, 7),
-#     ('@', MatmulDummy(3), 4),
-#     ('/', 3, 2),
-#     ('//', 8, 3),
-#     ('%', 8, 5),
-#     ('&', 0xff, 0xe4),
-#     ('|', 0x01, 0xf0),
-#     ('^', 0xff, 0xe3),
-#     ('**', 2, 3),
-#     ('<<', 1, 3),
-#     ('>>', 2, 1),
-#     ('==', 3, 3),
-#     ('!=', 3, 7),
-#     ('>', 4, 8),
-#     ('>=', 9, 2),
-#     ('<', 7, 1),
-#     ('<=', 8, 7),
-# ])
-# def binary_operators(request):
-#     operator, a, b = request.param
-#     expected = expected = eval('a %s b' % operator)
-#     return operator, a, b, expected
+class MatmulDummy:
+    """
+    Dummy implementing matrix multiplication (https://www.python.org/dev/peps/pep-0465/) so we don't
+    have to depend on numpy for the tests.
+    """
+    def __init__(self, value):
+        self.value = value
+
+    def __matmul__(self, other):
+        if isinstance(other, pf.Operation):
+            return NotImplemented
+        return self.value * other
 
 
-# def test_binary_operators_left(binary_operators):
-#     operator, a, b, expected = binary_operators
-#     with pf.Graph() as graph:
-#         _a = pf.constant(a)
-#         operation = eval('_a %s b' % operator)
-#
-#     actual = graph(operation)
-#     assert actual == expected, "expected %s %s %s == %s but got %s" % \
-#         (a, operator, b, expected, actual)
+@pytest.fixture(params=[
+    ('+', 1, 2),
+    ('-', 3, 7.0),
+    ('*', 2, 7),
+    ('@', MatmulDummy(3), 4),
+    ('/', 3, 2),
+    ('//', 8, 3),
+    ('%', 8, 5),
+    ('&', 0xff, 0xe4),
+    ('|', 0x01, 0xf0),
+    ('^', 0xff, 0xe3),
+    ('**', 2, 3),
+    ('<<', 1, 3),
+    ('>>', 2, 1),
+    ('==', 3, 3),
+    ('!=', 3, 7),
+    ('>', 4, 8),
+    ('>=', 9, 2),
+    ('<', 7, 1),
+    ('<=', 8, 7),
+])
+def binary_operators(request):
+    operator, a, b = request.param
+    expected = expected = eval('a %s b' % operator)
+    return operator, a, b, expected
+
+
+def test_binary_operators_left(binary_operators):
+    operator, a, b, expected = binary_operators
+    print(operator, a, b, expected)
+    print(operator, a, b, expected)
+    print(operator, a, b, expected)
+    print(operator, a, b, expected)
+    print(operator, a, b, expected)
+    with pf.Graph() as graph:
+        _a = pf.constant(a)
+        operation = eval('_a %s b' % operator)
+
+    actual = graph(operation)
+    assert actual == expected, "expected %s %s %s == %s but got %s" % \
+        (a, operator, b, expected, actual)
+    # ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
+    # TODO: this is hacky, there should be some way around this!
+    #       this might be a common pattern!
+    expr = 'a %s b' % operator
+    @slipform(debug=True, add_scope={'expr': expr})
+    def graph(a, b):
+        operation = eval(expr)
+    actual = graph('operation', a=a, b=b)
+    assert actual == expected, "expected %s %s %s == %s but got %s" % \
+        (a, operator, b, expected, actual)
 
 
 # def test_binary_operators_right(binary_operators):
@@ -357,33 +374,33 @@ def test_conditional():
 #     with pytest.raises(TypeError):
 #         with pf.Graph():
 #             _1, _2 = pf.placeholder()
-#
-#
-# def test_import():
-#     with pf.Graph() as graph:
-#         os_ = pf.import_('os')
-#         isfile = os_.path.isfile(__file__)
-#
-#     assert graph(isfile)
-#
-#
-# def test_tuple():
-#     expected = 13
-#     with pf.Graph() as graph:
-#         a = pf.constant(expected)
-#         b = pf.identity((a, a))
-#     actual, _ = graph(b)
-#     assert actual is expected, "expected %s but got %s" % (expected, actual)
-#
-#
-# def test_list():
-#     expected = 13
-#     with pf.Graph() as graph:
-#         a = pf.constant(expected)
-#         b = pf.identity([a, a])
-#     actual, _ = graph(b)
-#     assert actual is expected, "expected %s but got %s" % (expected, actual)
-#
+
+
+def test_import():
+    with pf.Graph() as graph:
+        os_ = pf.import_('os')
+        isfile = os_.path.isfile(__file__)
+
+    assert graph(isfile)
+    # ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
+    @slipform(debug=True)
+    def graph():
+        import string, math
+        import os as os_
+        import os.path as _path
+        from os.path import join as _join
+        # get stuff
+        isfile = os_.path.isfile(__file__)
+        a_is_ascii = 'a' in string.ascii_letters
+        joined = _path.join('a', 'b')
+        joined_fail = _join('a', 'b')
+
+    assert graph('isfile')
+    assert graph('a_is_ascii')
+    assert graph('joined') == 'a/b'
+    with pytest.raises(ModuleNotFoundError):
+        assert graph('joined_fail') == 'a/b'
+
 #
 # def test_dict():
 #     expected = 13
@@ -520,6 +537,7 @@ def test_conditional():
 #         graph([], {a: 1, 'a': 1})
 #
 #
+# TODO: maybe add this check?
 # def test_conditional_callback():
 #     with pf.Graph() as graph:
 #         a = pf.constant(1)
@@ -536,6 +554,7 @@ def test_conditional():
 #     assert len(tracer.times) == 3
 #
 #
+# TODO: maybe add this check?
 # def test_try_callback():
 #     with pf.Graph() as graph:
 #         a = pf.placeholder('a')
@@ -552,6 +571,7 @@ def test_conditional():
 #     assert len(tracer.times) == 5
 #
 #
+# TODO: maybe add this check?
 # def test_stack_trace():
 #     with pf.Graph() as graph:
 #         a = pf.placeholder()
@@ -565,6 +585,7 @@ def test_conditional():
 #         assert isinstance(ex.__cause__, pf.EvaluationError)
 #
 #
+# TODO: maybe add this check?
 # def test_placeholder_with_kwargs():
 #     with pf.Graph() as graph:
 #         a = pf.placeholder(length=2)
