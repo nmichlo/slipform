@@ -90,6 +90,8 @@ class SlipformTransformer(ast.NodeTransformer):
         node = SlipformConstants().visit(node)     # pf.constant
         node = SlipformSetNames().visit(node)      # a.set_name('a')
         node = SlipformPlaceholders().visit(node)  # def func(a) ->  def func(): pl.placeholder('a')
+        node = SlipformIn().visit(node)
+        node = SlipformCondition().visit(node)
         return node
 
 
@@ -229,6 +231,25 @@ class SlipformIn(ast.NodeTransformer):
             keywords=[],
         )
 
+
+class SlipformCondition(ast.NodeTransformer):
+
+    def visit_IfExp(self, node):
+        # wrap an if expression (not if statement)
+        # left if condition else right -> pf.conditional(condition, left, right)
+        return ast.Call(
+            func=ast.Attribute(
+                value=ast.Name(id='pf', ctx=ast.Load()),
+                attr='conditional',
+                ctx=ast.Load(),
+            ),
+            args=[
+                node.test,   # condition
+                node.body,   # left
+                node.orelse, # right
+            ],
+            keywords=[],
+        )
 
 
 

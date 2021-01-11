@@ -206,22 +206,33 @@ def test_reversed():
 #
 #     assert graph(a) == 'ab'
 #     assert graph(b) == 'cd'
-#
-#
-# def test_conditional():
-#     with pf.Graph() as graph:
-#         x = pf.constant(4)
-#         y = pf.placeholder(name='y')
-#         condition = pf.placeholder(name='condition')
-#         z = pf.conditional(condition, x, y)
-#
-#     assert graph(z, condition=True) == 4
-#     assert graph(z, condition=False, y=5) == 5
-#     # We expect a value error if we evaluate the other branch without a placeholder
-#     with pytest.raises(ValueError):
-#         graph(z, condition=False)
-#
-#
+
+
+def test_conditional():
+    with pf.Graph() as graph:
+        x = pf.constant(4)
+        y = pf.placeholder(name='y')
+        condition = pf.placeholder(name='condition')
+        z = pf.conditional(condition, x, y)
+
+    assert graph(z, condition=True) == 4
+    assert graph(z, condition=False, y=5) == 5
+    # We expect a value error if we evaluate the other branch without a placeholder
+    with pytest.raises(ValueError):
+        graph(z, condition=False)
+    # ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
+    @slipform()
+    def graph(y, condition):
+        x = 4
+        z = x if condition else y
+
+    assert graph('z', condition=True) == 4
+    assert graph('z', condition=False, y=5) == 5
+    # We expect a value error if we evaluate the other branch without a placeholder
+    with pytest.raises(ValueError):
+        graph('z', condition=False)
+
+
 # def test_conditional_with_length():
 #     def f(a):
 #         return a, a
