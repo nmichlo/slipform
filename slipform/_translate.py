@@ -151,14 +151,14 @@ class SlipformConstants(ast.NodeTransformer):
         # wrap the actual constant
         # node -> pf.constant(node)
         return ast.Call(
-                func=ast.Attribute(
-                    value=ast.Name(id='pf', ctx=ast.Load()),
-                    attr='constant',
-                    ctx=ast.Load(),
-                ),
-                args=[node],
-                keywords=[],
-            )
+            func=ast.Attribute(
+                value=ast.Name(id='pf', ctx=ast.Load()),
+                attr='constant',
+                ctx=ast.Load(),
+            ),
+            args=[node],
+            keywords=[],
+        )
 
     @classmethod
     def constant_needs_wrapper(cls, node):
@@ -203,6 +203,31 @@ class SlipformPlaceholders(ast.NodeTransformer):
         # clear the arguments from the function definition
         node.args.args.clear()
         return node
+
+
+class SlipformIn(ast.NodeTransformer):
+
+    def visit_Compare(self, node):
+        # basic checks
+        if len(node.comparators) != 1 or len(node.ops) != 1:
+            print('WARNING: skipped in node, this is a bug, better checks are needed!')
+            return
+        if not isinstance(node.ops[0], ast.In):
+            return
+        # wrap the in comparator
+        # a in B -> pf.contains(B, a)
+        return ast.Call(
+            func=ast.Attribute(
+                value=ast.Name(id='pf', ctx=ast.Load()),
+                attr='contains',
+                ctx=ast.Load(),
+            ),
+            args=[
+                node.comparators[0],  # right
+                node.left,            # left
+            ],
+            keywords=[],
+        )
 
 
 
