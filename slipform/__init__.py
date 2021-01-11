@@ -4,7 +4,7 @@ pythonflow decorator for generating dataflow graphs using natural syntax.
 https://github.com/nmichlo/slipform
 """
 
-__version__ = "0.0.1-alpha1"
+__version__ = "0.0.1-alpha2"
 
 
 from pythonflow import Graph as _Graph

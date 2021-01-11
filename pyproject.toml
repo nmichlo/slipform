@@ -2,6 +2,8 @@
 requires = ["flit_core >=2,<4"]
 build-backend = "flit_core.buildapi"
 
+# Flit Docs:
+# https://flit.readthedocs.io/en/latest/pyproject_toml.html#metadata-section
 [tool.flit.metadata]
 module = "slipform"
 author = "Nathan Michlo"
