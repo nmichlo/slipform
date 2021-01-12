@@ -2,6 +2,7 @@ from collections import deque
 import redbaron as rb
 from uuid import uuid4
 from slipform._ast_utils import inspect_get_source
+import pythonflow as pf
 
 
 # ========================================================================= #
@@ -32,51 +33,57 @@ def redbaron_recompile_func(red: rb.RedBaron):
 
 
 # ========================================================================= #
-# Slipfrom Main Decorator                                                   #
+# Slipform Decorator                                                        #
 # ========================================================================= #
 
 
-class Slipfrom(object):
+class Slipform(object):
 
-    def __init__(self, func):
+    def __init__(self, func, debug=False):
         # original data
         self.orig_func = func
         self.orig_source = self._get_source(self.orig_func)
         self.orig_red = rb.RedBaron(self.orig_source)
         # transpiled data
-        self.new_red = slipform_translate(rb.RedBaron(self.orig_source))
+        self.new_red = slipform_translate(rb.RedBaron(self.orig_source))  # makes a copy
         self.new_source = self.new_red.dumps()
         self.new_func = redbaron_recompile_func(self.new_red)
+        # debugging
+        if debug:
+            print(self.new_source)
 
     @staticmethod
     def _get_source(func):
         return inspect_get_source(func, unindent=True, strip_decorators=False)
 
     def __call__(self, *args, **kwargs):
-        import pythonflow
-        with pythonflow.Graph() as graph:
+        with pf.Graph() as graph:
             self.new_func(*args, **kwargs)
         return graph
 
 
-def slipform(fn=None):
+def slipform(fn=None, debug=False):
     def wrapper(func):
-        # recompile function
-        red = redbaron_decompile_func(func)
-        new_red = slipform_translate(red)
-        new_func = redbaron_recompile_func(new_red)
-        # return translated function
-        return new_func
+        return Slipform(func, debug=debug)
     return wrapper if (fn is None) else wrapper(fn)
 
 
-class node_iter(object):
+# ========================================================================= #
+# Node Iterator                                                             #
+# ========================================================================= #
 
-    def __init__(self, node, skip_types=None):
+
+class _NodeIter(object):
+    """
+    Node iterator that supports skipping the nodes children
+    as well as skipping certain types of nodes.
+    """
+
+    def __init__(self, node, skip_types=(rb.EndlNode, str)):
         self._stack = deque([node])
         self._visit_children = True
         self._prev = None
-        self._skip_node_types = (rb.EndlNode,) if (skip_types is None) else tuple(skip_types)
+        self._skip_node_types = None if (skip_types is None) else tuple(skip_types)
 
     def __iter__(self):
         return self
@@ -106,6 +113,14 @@ class node_iter(object):
         self._visit_children = False
 
 
+def node_iter(node, skip_types=None):
+    return _NodeIter(node, skip_types=skip_types)
+
+
+# ========================================================================= #
+# Translation                                                               #
+# ========================================================================= #
+
 
 SCOPE_ARG = 'ARG'
 SCOPE_VAR = 'VAR'
@@ -127,10 +142,7 @@ def slipform_translate(red: rb.RedBaron):
     # process each line one at a time
     # update the available scope if an assignment takes place
     # update the required scope if a variable is accessed
-    it = node_iter(
-        node=root,
-        skip_types=(rb.EndlNode, str)
-    )
+    it = node_iter(node=root, skip_types=(rb.EndlNode, str))
     for node in it:
         try:
             # >>> ASSIGNMENT ``a = b``
@@ -155,9 +167,13 @@ def slipform_translate(red: rb.RedBaron):
     return red
 
 
+# ========================================================================= #
+# Tests                                                                     #
+# ========================================================================= #
+
 if __name__ == '__main__':
 
-    @slipform
+    @slipform(debug=True)
     def test_func(x):
         (A, (_B, C)) = (1, [2, 3])
         a = 5
