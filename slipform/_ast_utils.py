@@ -14,12 +14,13 @@ def is_comment_line(line):
     line = line.strip()
     return not line or line.startswith('#')
 
+
 def inspect_get_source(func, unindent=True, strip_decorators=True):
     lines, _ = inspect.getsourcelines(func)
     if unindent:
         indents = min(len(line) - len(line.lstrip()) for line in lines if not is_comment_line(line))
         # this is a bit hacky, should modify indents of comments
-        lines = [line[indents:] for line in lines if not is_comment_line(line)]
+        lines = [line if is_comment_line(line) else line[indents:] for line in lines]
     if strip_decorators:
         i = 0
         while lines[i].lstrip().startswith('@'):
