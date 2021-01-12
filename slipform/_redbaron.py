@@ -79,11 +79,11 @@ class _NodeIter(object):
     as well as skipping certain types of nodes.
     """
 
-    def __init__(self, node, skip_types=(rb.EndlNode, str)):
+    def __init__(self, node, skip_types):
         self._stack = deque([node])
         self._visit_children = True
         self._prev = None
-        self._skip_node_types = None if (skip_types is None) else tuple(skip_types)
+        self._skip_node_types = () if (skip_types is None) else tuple(skip_types)
 
     def __iter__(self):
         return self
@@ -104,8 +104,11 @@ class _NodeIter(object):
     def _try_extend_stack(self, node):
         try:
             for v in reversed(node.value):
-                if not isinstance(v, self._skip_node_types):
-                    self._stack.append(v)
+                if not isinstance(v, rb.Node):
+                    continue
+                if isinstance(v, self._skip_node_types):
+                    continue
+                self._stack.append(v)
         except (TypeError, AttributeError):
             pass
 
@@ -113,7 +116,7 @@ class _NodeIter(object):
         self._visit_children = False
 
 
-def node_iter(node, skip_types=None):
+def node_iter(node, skip_types=(rb.EndlNode, str)):
     return _NodeIter(node, skip_types=skip_types)
 
 
@@ -196,6 +199,8 @@ if __name__ == '__main__':
                 i = i + 1
                 break
             else:
-                return i
+                return i + i
+
+        return i
 
         return i
