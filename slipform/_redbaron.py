@@ -45,9 +45,12 @@ class Slipform(object):
         self.orig_source = self._get_source(self.orig_func)
         self.orig_red = rb.RedBaron(self.orig_source)
         # transpiled data
-        self.new_red = slipform_translate(rb.RedBaron(self.orig_source))  # makes a copy
-        self.new_source = self.new_red.dumps()
-        self.new_func = redbaron_recompile_func(self.new_red)
+        try:
+            self.new_red = slipform_translate(rb.RedBaron(self.orig_source))  # makes a copy
+            self.new_source = self.new_red.dumps()
+            self.new_func = redbaron_recompile_func(self.new_red)
+        except Exception as e:
+            raise RuntimeError(f'Error translating function: {self.orig_func}\n{"="*80}\n{self.orig_source}\n{"="*80}')
         # debugging
         if debug:
             print(self.new_source)
@@ -80,7 +83,7 @@ class _NodeIter(object):
     """
 
     def __init__(self, node, skip_types):
-        self._stack = deque([node])
+        self._stack = deque(node.root if isinstance(node, rb.RedBaron) else [node])
         self._visit_children = True
         self._prev = None
         self._skip_node_types = () if (skip_types is None) else tuple(skip_types)
@@ -125,48 +128,97 @@ def node_iter(node, skip_types=(rb.EndlNode, str)):
 # ========================================================================= #
 
 
+class NodeTransformer(object):
+
+    def __init__(self):
+        self._skip_next = False
+
+    def transform(self, root):
+        self.reset()
+        # begin
+        it = node_iter(root)
+        for node in it:
+            # if we marked the next node to be skipped
+            # skip it by stopping the iterator from traversing its children
+            # and not visiting the current node otherwise
+            if self._skip_next:
+                self._skip_next = False
+                it.skip_children()
+                continue
+            # get the nodes name
+            assert isinstance(node, rb.Node), f'node is not an instance of Node: {node} ({type(node)})'
+            func = getattr(self, f'visit_{node.__class__.__name__}', None)
+            # visit the node if possible
+            if func is not None:
+                try:
+                    visit_children = func(node)
+                except Exception as e:
+                    print(f'Failed to translate node: {node} Encountered error: {e}')
+                    visit_children = False
+                # skip if needed
+                if visit_children is False:
+                    it.skip_children()
+        return root
+
+    def skip_next(self):
+        self._skip_next = True
+
+    def reset(self):
+        pass
+
+
+# ========================================================================= #
+# Translation                                                               #
+# ========================================================================= #
+
+
 SCOPE_ARG = 'ARG'
 SCOPE_VAR = 'VAR'
 SCOPE_WRAPPED = 'WRAPPED'
 
 
+class SlipformTranslate(NodeTransformer):
+
+    def __init__(self):
+        super().__init__()
+        # initialise the scope from the arguments
+        # we will use this to keep track of types
+        self.scope_required = set()
+        self.scope_available = {}
+
+    def visit_DefNode(self, node):
+        # add the input arguments to the scope!
+        for arg in node.arguments:
+            self.scope_available[arg.namenode.value] = SCOPE_ARG
+
+    def visit_AssignmentNode(self, node):
+        # >>> ASSIGNMENT ``a = b``
+        # add set_name after names in assigment nodes
+        for name in node.target.find_all('name')[::-1]:
+            # skip ``_name``
+            if name.value.startswith('_'):
+                continue
+            # do not allow ``name.key`` and ``name[key]``
+            if isinstance(name.parent, rb.AtomtrailersNode):
+                continue
+            node.insert_after(f"{name.value}.set_name('{name.value}')")
+
+    def visit_CommentNode(self, node):
+        # >>> COMMENT: ``# comment``
+        # check if this is a directive
+        # ``# []`` and ``#[]`` are valid directives
+        comment = node.value[1:].strip()
+        if comment == '[ignore]':
+            self.skip_next()
+
+
 def slipform_translate(red: rb.RedBaron):
-    root = red.root[0]
-    assert len(red.root) == 1
-    assert isinstance(root, rb.DefNode), f'{root=} ({type(root)}) is not an instance of {rb.DefNode}'
-
-    # initialise the scope from the arguments
-    # we will use this to keep track of types
-    scope_required = set()
-    scope_available = {}
-    for arg in root.arguments:
-        scope_available[arg.namenode.value] = SCOPE_ARG
-
-    # process each line one at a time
-    # update the available scope if an assignment takes place
-    # update the required scope if a variable is accessed
-    it = node_iter(node=root, skip_types=(rb.EndlNode, str))
-    for node in it:
-        try:
-            # >>> ASSIGNMENT ``a = b``
-            if isinstance(node, rb.AssignmentNode):
-                # add set_name after names in assigment nodes
-                names = [n.value for n in node.target.find_all('name') if not n.value.startswith('_')]
-                for name in names[::-1]:
-                    node.insert_after(f"{name}.set_name('{name}')")
-
-            # >>> COMMENT: ``# comment``
-            elif isinstance(node, rb.CommentNode):
-                it.skip_children()
-                # check if this is a directive
-                # ``# []`` and ``#[]`` are valid directives
-                comment = node.value[1:].strip()
-                if comment == '[ignore]':
-                    next(it)
-
-        except Exception as e:
-            print(f'Failed to translate node: {node} Encountered error: {e}')
-
+    # assert len(red.root) == 1
+    # root = red.root[0]
+    # assert isinstance(root, rb.DefNode), f'{root=} ({type(root)}) is not an instance of {rb.DefNode}'
+    # transform the node
+    red.help(2)
+    SlipformTranslate().transform(red)
     return red
 
 
@@ -176,10 +228,12 @@ def slipform_translate(red: rb.RedBaron):
 
 if __name__ == '__main__':
 
+
     @slipform(debug=True)
     def test_func(x):
-        (A, (_B, C)) = (1, [2, 3])
+        (A, (_B, C, x[1], x.a)) = (1, [2, 3, 4, 5])  # [ignore]
         a = 5
+        # [ignore]
         b = 32
         z = a + b + x + 1
 
@@ -188,7 +242,7 @@ if __name__ == '__main__':
         # [ignore]
         if a == b:
             print(a)
-            a + b
+            Q = a + b
 
         loop_var = 0
         for i in range(a):
