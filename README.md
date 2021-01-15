@@ -1,3 +1,12 @@
+
+---------------
+
+**NB!** This project is unmaintained. It was started as a way to learn more about the python AST.
+
+---------------
+---------------
+---------------
+
 # 🏗 slipform &nbsp; ![](https://badge.fury.io/py/slipform.svg)
 [pythonflow](https://github.com/spotify/pythonflow) decorator for generating dataflow graphs from raw python.
 
