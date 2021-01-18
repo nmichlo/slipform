@@ -48,7 +48,7 @@ It is not actively developed, nor should it be considered stable.
 
 ```python3
 from slipform import slipform
-# "pf" must be part of scope of any @slipfrom annotated
+# "pf" must be part of scope of any @slipform annotated
 # function. This limitation will be relaxed in future.
 import pythonflow as pf
 ```
@@ -81,7 +81,7 @@ add_graph(['b', 'z'], x=5)
 3. A more complicated example
 
 ```python3
-@slipfrom()
+@slipform()
 def vae(x, x_target, encoder, decoder, mse):
     # import ... from ... (as ...) are all supported
     import torch
